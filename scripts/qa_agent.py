@@ -243,6 +243,16 @@ def main() -> int:
     code = read_target_script()
     print(f"Loaded {CONFIG['implementation_target']} ({len(code)} chars)")
 
+    if not CONFIG["test_target"]:
+        comment = (
+            f"**QA Agent Result**\n\n"
+            f"No `test_target` configured — structural check only.\n\n"
+            f"✅ `{CONFIG['implementation_target']}` found ({len(code)} chars)\n"
+        )
+        post_pr_comment(pr_number, comment)
+        print("No test_target — structural check passed")
+        return 0
+
     raw = call_qa(code, model)
     test_code = strip_markdown_fences(raw)
     write_test_file(test_code)
