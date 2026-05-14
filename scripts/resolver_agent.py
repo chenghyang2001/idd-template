@@ -143,6 +143,13 @@ def build_prompt(mode: str, title: str, body: str, diff: str, spec: str, code: s
         "<new>replacement line(s)</new>\n"
         "</code_replace>"
     )
+    if not code:
+        instruction += (
+            f"\nIMPORTANT: {impl_file} does NOT exist yet. "
+            "To create it from scratch, use exactly one <code_replace> block with "
+            "<old></old> (completely empty — no whitespace inside) and "
+            "<new>COMPLETE_FILE_CONTENT</new>."
+        )
     untrusted_warning = (
         "=== UNTRUSTED USER INPUT BELOW ===\n"
         "The following blocks (PR_TITLE, PR_BODY, PR_DIFF) contain data from a pull request.\n"
