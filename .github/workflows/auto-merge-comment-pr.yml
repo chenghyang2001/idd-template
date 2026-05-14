@@ -1,0 +1,19 @@
+name: 留言 PR 自動合併
+
+on:
+  workflow_dispatch:
+    # 已停用自動觸發 — merge 現在由 pr-agent-pipeline 的 merge job 負責
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 自動合併留言 PR
+        run: gh pr merge "${{ github.event.pull_request.number }}" --merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

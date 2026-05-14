@@ -1,0 +1,55 @@
+# Issue-Driven Development (IDD) Pipeline
+# 當 Issue 建立時，自動建立 feature branch 並開 PR，
+# 讓 pr-agent-pipeline.yml 接手執行 classify → resolver → qa → merge。
+name: Issue-Driven Pipeline
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: issue-to-pr-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  create_pr_from_issue:
+    runs-on: ubuntu-latest
+    if: github.event.issue.user.login != 'github-actions[bot]'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure git identity
+        run: |
+          GH_USER=$(GH_TOKEN="${{ secrets.GH_PAT }}" gh api user --jq .login)
+          GH_EMAIL="${GH_USER}@users.noreply.github.com"
+          git config user.name "$GH_USER"
+          git config user.email "$GH_EMAIL"
+
+      - name: Create branch and open PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body || '（無描述）' }}
+        run: |
+          BRANCH="feature/issue-${ISSUE_NUMBER}"
+          git checkout -b "$BRANCH"
+          git commit --allow-empty -m "Issue #${ISSUE_NUMBER}：初始化 feature branch（IDD placeholder）"
+          git push origin "$BRANCH"
+          # 使用 printf + mktemp + --body-file 避免 ISSUE_BODY 含雙引號時的 shell injection
+          # %s 是 printf 格式佔位符，ISSUE_NUMBER 和 ISSUE_BODY 以位置參數傳入，
+          # 不受 ISSUE_BODY 內容中的 % 字元影響。
+          PR_BODY_FILE=$(mktemp)
+          trap "rm -f '$PR_BODY_FILE'" EXIT
+          printf 'Resolves #%s\n\n## Issue 描述\n\n%s' \
+            "${ISSUE_NUMBER}" "${ISSUE_BODY}" > "$PR_BODY_FILE"
+          gh pr create \
+            --title "${ISSUE_TITLE}" \
+            --body-file "$PR_BODY_FILE" \
+            --head "$BRANCH"
+          rm -f "$PR_BODY_FILE"

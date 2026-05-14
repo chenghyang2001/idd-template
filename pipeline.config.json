@@ -1,0 +1,11 @@
+{
+  "spec_file": "spec.md",
+  "implementation_target": "main.py",
+  "test_target": "test_main.py",
+  "language": "html",
+  "run_command": [
+    "python",
+    "main.py"
+  ],
+  "_comment": "此檔案是 IDD pipeline 的唯一客製點。請依你的專案修改上面 4 個欄位。language 可為 html / python / javascript。"
+}
